@@ -5,83 +5,89 @@ date: 06/12/2020
 
 This is the main script to use pipelines in Python.
 Data source: https://www.kaggle.com/c/house-prices-advanced-regression-techniques/data?select=test.csv
+Resource: https://medium.com/vickdata/a-simple-guide-to-scikit-learn-pipelines-4ac0d974bdcf
 
 """
 
 import pandas as pd
+import numpy as np
 from sklearn.compose import ColumnTransformer
+from sklearn.ensemble import RandomForestClassifier, AdaBoostClassifier, GradientBoostingClassifier
+from sklearn.metrics import mean_absolute_error
 from sklearn.model_selection import train_test_split
+from sklearn.neighbors import KNeighborsClassifier
 from sklearn.pipeline import Pipeline
 from sklearn.impute import SimpleImputer
-from sklearn.preprocessing import OneHotEncoder
-from sklearn.ensemble import RandomForestRegressor
-from sklearn.metrics import mean_absolute_error
+from sklearn.preprocessing import StandardScaler, OneHotEncoder
+from sklearn.svm import SVC, NuSVC
+from sklearn.tree import DecisionTreeClassifier
 
 # Load train and test datasets
-# path = r"C:\Users\iker.delomaosorio\Documents\Datasets\HousePricesAdvancedRegressionTechniques_Kaggle"
-path = input("Select the dataset path:")
-file = input("Introduce the CSV file name (Example: data.csv):")
-df = pd.read_csv(path + "\\" + file)
 
-# Check if there are missing values
-print("Missing values in train:", df.isnull().sum().sum())
+path = r"C:\Users\iker.delomaosorio\Documents\Datasets\HousePricesAdvancedRegressionTechniques_Kaggle"
 
-# Check if there are missing values in the target (SalePrice) variable
-# in the training dataset
-print("Missing values in SalePrice:", df.SalePrice.isnull().sum())
+file_train = "train.csv"
+file_test = "test.csv"
 
-# Separate the target variables from the predictors
-y = df.SalePrice
-X = df.drop(['SalePrice'], axis=1)
+train = pd.read_csv(path + "\\" + file_train)
+test = pd.read_csv(path + "\\" + file_test)
 
-# Divide data into training and validation subsets
-X_train_full, X_test_full, y_train, y_test = train_test_split(X, y, train_size=0.8, test_size=0.2,
-                                                              random_state=0)
+# Remove the Id column
+train = train.drop('Id', axis=1)
 
+# Remove the target column (SalePrice) from the other columns
+X = train.drop('SalePrice', axis=1)
+y = train.SalePrice
+print("Missing values in the features:", X.isnull().sum().sum())
+print("Missing values in target:", y.isnull().sum())
 
-# Check the amount of numerical and categorical variables
-categorical_cols = [cname for cname in X_train_full.columns if X_train_full[cname].nunique() < 10 and
-                    X_train_full[cname].dtype == "object"]
+# Split the training dataset into train and test to later validate the performance of the models
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2)
 
-# Select numerical columns
-numerical_cols = [cname for cname in X_train_full.columns if X_train_full[cname].dtype in ['int64', 'float64']]
+# Divide the features by type
+print("Unique data types in the train dataset:", train.dtypes.unique())
+# There are numerical (int64 and float64) and categorical (object) types
+# Select the numeric features (without the target)
+numeric_features = X.select_dtypes(include=['int64', 'float64']).columns
+# Select the non-numeric (categorical) columns
+categorical_features = X.select_dtypes(include=['object']).columns
 
-# Keep selected columns only
-my_cols = categorical_cols + numerical_cols
-X_train = X_train_full[my_cols].copy()
-X_valid = X_test_full[my_cols].copy()
+# Transformers
+numeric_transformer = SimpleImputer(strategy='constant')
 
-# Preprocessing for numerical data
-numerical_transformer = SimpleImputer(strategy='constant')
-
-# Preprocessing for categorical data
 categorical_transformer = Pipeline(steps=[
     ('imputer', SimpleImputer(strategy='most_frequent')),
     ('onehot', OneHotEncoder(handle_unknown='ignore'))
 ])
 
-# Bundle preprocessing for numerical and categorical data
-preprocessor = ColumnTransformer(
-    transformers=[
-        ('num', numerical_transformer, numerical_cols),
-        ('cat', categorical_transformer, categorical_cols)
-    ])
+# Let's preprocess the features
+preprocesor = ColumnTransformer(transformers=[
+    ('numerical', numeric_transformer, numeric_features),
+    ('categorical', categorical_transformer, categorical_features)])
 
-# Model
-model = RandomForestRegressor(n_estimators=100, random_state=0)
+# Machine learning algorithm model
+model = RandomForestClassifier(n_estimators=100, random_state=0)
 
-# Create and evaluate the pipeline
-# Bundle preprocessing and modeling code in a pipeline
-my_pipeline = Pipeline(steps=[('preprocessor', preprocessor),
-                              ('model', model)
-                              ])
+# Create the pipeline
+my_pipeline = Pipeline(steps=[
+    ('preprocessor', preprocesor),
+    ('model', model)])
 
-# Preprocessing of training data, fit model
+# Fit the pipeline
 my_pipeline.fit(X_train, y_train)
 
-# Preprocessing of validation data, get predictions
-predictions = my_pipeline.predict(X_valid)
+# Predictions
+predictions = my_pipeline.predict(X_test)
 
 # Evaluate the model
 score = mean_absolute_error(y_test, predictions)
-print('MAE:', score)
+print("MAE:", score)
+
+
+
+
+# "Cardinality" means the number of unique values in a column
+# Select categorical columns with relatively low cardinality (convenient but arbitrary)
+# categorical_cols = [cname for cname in X_train.columns if X_train[cname].nunique() < 10 and
+#                     X_train[cname].dtype == "object"]
+
