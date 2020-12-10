@@ -25,8 +25,8 @@ from sklearn.preprocessing import OneHotEncoder
 from sklearn.svm import SVC
 
 # Load the dataset
-path = r"C:\Users\iker.delomaosorio\Documents\Datasets\HousePricesAdvancedRegressionTechniques_Kaggle"
-file = "train.csv"
+path = input("Introduce the path of the dataset:")
+file = input("Introduce the name of the file with its extension (example: data.csv):")
 data = pd.read_csv(path + "\\" + file)
 
 # Remove the Id column, since it does not add any value for the later predictions
@@ -44,7 +44,7 @@ print("Missing values in target:", y.isnull().sum())  # No missing values
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2)
 
 # Check the type of features of the dataset
-print("Unique data types in the train dataset:", data.dtypes.unique())
+print("Unique data types in the dataset:", data.dtypes.unique())
 # There are numerical (int64 and float64) and categorical (object) features in this dataset
 
 # Select the numeric features. Do not consider the target (y),as it does not have any missing value
