@@ -95,4 +95,5 @@ score_results['Model'] = model_names
 score_results['MAE'] = score_list
 
 # Sort the MAE values from smallest to bigger to rank the models from best to worse
+print("Mean Absolute Error (MAE) results per model:")
 print(score_results.sort_values(by='MAE'))
